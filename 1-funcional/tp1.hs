@@ -11,7 +11,7 @@ data Melodia =
      Nota Tono Duracion |
      Secuencia Melodia Melodia | 
      Paralelo [Melodia]
-  deriving Show
+  deriving (Show, Eq)
 
 -- Funciones auxiliares dadas
 
@@ -275,7 +275,7 @@ tests = do runTestTT allTests
 allTests = test [
   "ejercicio1" ~: testsEj1,
   "ejercicio2" ~: testsEj2,
-  "ejercicio3" ~: testsEj3,
+--  "ejercicio3" ~: testsEj3,
   "ejercicio4" ~: testsEj4,
   "ejercicio5" ~: testsEj5,
   "ejercicio6" ~: testsEj6
@@ -284,24 +284,53 @@ allTests = test [
 -- Ejemplos sólo para mostrar cómo se escriben los tests. Reemplazar por los tests propios.
 
 testsEj1 = test [
-  2 ~=? 1+1,
-  4 ~=? 2*2
+  -- sanity check
+  _do 10 ~=? _do 10,
+
+  -- superponer
+  Paralelo[_do 10, (Secuencia (Silencio 2) (_re 10))] ~=? superponer (_do 10) 2 (_re 10),
+  
+  -- canon
+  canon 2 3 (Nota 60 4) ~=? Paralelo [Nota 60 4,Secuencia (Silencio 2) (Paralelo [Nota 60 4,Secuencia (Silencio 2) (Nota 60 4)])],
+  
+  -- secuenciar
+  secuenciar [Nota 60 1, Nota 60 2, Nota 60 3] ~=? Secuencia (Secuencia (Nota 60 1) (Nota 60 2)) (Nota 60 3)
   ]
 testsEj2 = test [
-  2 ~=? 1+1,
-  4 ~=? 2*2
+  -- canonInfinito, tambien testea notasQueSuenan #efficient
+  notasQueSuenan 1 (canonInfinito 5 $ Nota 60 3) ~=? [60],
+  notasQueSuenan 3 (canonInfinito 5 $ Nota 60 3) ~=? [60],
+  notasQueSuenan 4 (canonInfinito 5 $ Nota 60 3) ~=? [],
+  notasQueSuenan 6 (canonInfinito 5 $ Nota 60 3) ~=? [60]
   ]
-testsEj3 = test [
-  2 ~=? 1+1,
-  4 ~=? 2*2
-  ]
+--testsEj3 = test [
+  -- foldMelodia se testea con el resto de los ejercicios.
+  -- https://kentcdodds.com/blog/write-tests/
+--  ]
 testsEj4 = test [
-  2 ~=? 1+1,
-  4 ~=? 2*2
+  -- mapMelodia
+  mapMelodia (*2) acorde ~=? Paralelo [Nota 120 10, Secuencia (Silencio 3) (Nota 128 7), Secuencia (Silencio 6) (Nota 134 4)],
+  
+  -- transportar
+  transportar 2 acorde ~=? mapMelodia (+2) acorde,
+
+  -- duracionTotal
+  duracionTotal acorde ~=? 10,
+
+  -- cambiarVelocidad
+  duracionTotal (cambiarVelocidad 2 acorde) ~=? 20,
+
+  -- invertir
+  -- Paralelo [_do 10, Secuencia (Silencio 3) (_mi 7), Secuencia (Silencio 6) (_sol 4)]
+  invertir acorde ~=? Paralelo [Secuencia (Nota 67 4) (Silencio 6),Secuencia (Nota 64 7) (Silencio 3),Nota 60 10]
   ]
 testsEj5 = test [
-  2 ~=? 1+1,
-  4 ~=? 2*2
+  -- acorde: Paralelo [_do 10, Secuencia (Silencio 3) (_mi 7), Secuencia (Silencio 6) (_sol 4)]
+  notasQueSuenan (-1) acorde ~=? [],         -- caso borde
+  notasQueSuenan 1 acorde ~=? [60],          -- do
+  notasQueSuenan 4 acorde ~=? [60, 64],      -- do, mi
+  notasQueSuenan 10 acorde ~=? [60, 64, 67], -- do re sol
+  notasQueSuenan 20 acorde ~=? []
   ]
 testsEj6 = test [
   2 ~=? 1+1,
