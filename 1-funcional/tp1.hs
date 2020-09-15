@@ -24,48 +24,122 @@ foldNat caso0 casoSuc n | n == 0 = caso0
 
 -- Ejercicio 1
 
-superponer :: Melodia->Duracion->Melodia->Melodia
-superponer = undefined
+-- hace sonar la primera melodia, luego de d hace sonar la segunda en paralelo
+superponer :: Melodia -> Duracion -> Melodia -> Melodia
+superponer m1 d m2 = Paralelo [m1, Secuencia (Silencio d) m2]
 
 -- Sugerencia: usar foldNat
-canon :: Duracion->Integer->Melodia->Melodia
-canon = undefined
+-- reproduce la melodia m n veces esperando d antes de reproducir cada una
+canon :: Duracion -> Integer -> Melodia -> Melodia
+canon d n m = foldNat m (superponer m d) (n-1)
 
-secuenciar :: [Melodia] -> Melodia--Se asume que la lista no es vacía.
-secuenciar = undefined
+-- dada una lista no vacia de melodias las toca en secuencia preservando el
+-- orden.
+secuenciar :: [Melodia] -> Melodia -- Se asume que la lista no es vacía.
+-- secuenciar = foldl1 (\acc x -> (Secuencia acc x))
+secuenciar = foldl1 (Secuencia)
 
 -- Ejercicio 2
 
-canonInfinito :: Duracion->Melodia->Melodia
-canonInfinito = undefined
+-- es como canon pero genera una melodia infinita
+-- sug foldr
+canonInfinito :: Duracion -> Melodia -> Melodia
+canonInfinito d m = foldr1 (\x r -> superponer x d r) (repeat m)
 
 -- Ejercicio 3
 
-foldMelodia = undefined
+foldMelodia ::
+  (Duracion -> a)             -- silencio
+  -> (Tono -> Duracion -> a)  -- nota
+  -> (a -> a -> a)            -- secuencia
+  -> ([a] -> a)               -- paralelo
+  -> Melodia -> a
+
+foldMelodia cSil cNot cSeq cPar m = case m of
+  (Silencio d) -> cSil d
+  (Nota t d) -> cNot t d
+  (Secuencia m1 m2) -> cSeq (rec m1) (rec m2)
+    where rec = foldMelodia cSil cNot cSeq cPar
+  (Paralelo ms) -> cPar $ map rec ms
+    where rec = foldMelodia cSil cNot cSeq cPar
 
 -- Ejercicio 4
 
-mapMelodia :: (Tono -> Tono)->Melodia->Melodia
-mapMelodia = undefined
+-- aplica la funcion a cada nota de la melodia, manteniendo la estructura
+mapMelodia :: (Tono -> Tono) -> Melodia -> Melodia
+mapMelodia f = foldMelodia (Silencio) cNot (Secuencia) (Paralelo)
+  where cNot t d = Nota (f t) d
 
+-- transportar n m es la melodia m transportada n semitonos
+-- Equivalente a sumarle el valor de n a cada tono de m
 transportar :: Integer -> Melodia -> Melodia
-transportar = undefined
+transportar n = mapMelodia (+n)
 
+-- Calcula la duracion (en beats) de una melodia. Asumir que en paralelo de 0
+-- melodias dura 0 beats.
 duracionTotal :: Melodia->Duracion
-duracionTotal = undefined
+duracionTotal = foldMelodia cSil cNot cSeq cPar
+  where cSil = id
+        cNot t d = d
+        cSeq = (+)
+        cPar [] = 0
+        cPar ds = maximum ds
 
-cambiarVelocidad :: Float->Melodia->Melodia--Sugerencia: usar round y fromIntegral
-cambiarVelocidad = undefined
+--Sugerencia: usar round y fromIntegral
+cambiarVelocidad :: Float -> Melodia -> Melodia
+cambiarVelocidad factor = foldMelodia cSil cNot cSeq cPar
+  where escalar d = round ((fromIntegral d) * factor)
+        cSil d = Silencio $ escalar d
+        cNot t d = Nota t $ escalar d
+        cSeq = Secuencia
+        cPar = Paralelo
 
+-- invierte una melodia, las notas y silencios se reproducen en el orden inverso
 invertir :: Melodia -> Melodia
-invertir = undefined
+invertir = foldMelodia cSil cNot cSeq cPar
+  where cSil = Silencio
+        cNot = Nota
+        cSeq m1 m2 = Secuencia m2 m1
+        cPar ms = (Paralelo $ reverse ms)
+
 
 -- Ejercicio 5
 
--- En instantes menores que 0 no suena ninguna nota. Se puede usar recursión explícita. Resaltar las partes del código que hacen que no se ajuste al esquema fold.
-notasQueSuenan :: Instante->Melodia->[Tono]
+-- Indica que notas de la melodia estan sonando en un instante dado.
+
+-- En instantes menores que 0 no suena ninguna nota.
+-- Se puede usar recursión explícita.
+-- Resaltar las partes del código que hacen que no se ajuste al esquema fold.
+notasQueSuenan :: Instante -> Melodia -> [Tono]
 --Sugerencia: usar concatMap.
-notasQueSuenan = undefined
+notasQueSuenan i m
+  | i < 0 = []
+  | otherwise = case m of
+      (Silencio d) -> []
+      (Nota t d) -> if d >= i then [t] else []
+      (Secuencia m1 m2) ->
+        if dm1 >= i
+        then notasQueSuenan i m1
+        else notasQueSuenan (i - dm1) m2
+        where dm1 = duracionTotal m1
+      (Paralelo ms) -> concatMap (notasQueSuenan i) ms
+
+notasQueSuenan' :: Melodia -> (Instante -> [Tono])
+notasQueSuenan' = foldMelodia cSil cNot cSeq cPar
+  where cSil d = (\i -> [])
+        cNot t d = (\i -> if d >= i then [t] else [])
+        -- problema: no hay forma de saber en cual parte de la secuencia buscar
+        -- las notas que suenan. No hay forma de obtener cuanto dura cada
+        -- melodia.
+        cSeq f1 f2 = (\i -> (f1 i) ++ (f2 i))
+        cPar fns = (\i -> concatMap ($i) fns)
+
+{-
+Cosas que no funcionan
+
+- foldMelodia: No es SOLO recursion estructural, es recursion sobre i y sobre la
+  estructura de la melodia.
+-}
 
 -- Ejercicio 6
 
