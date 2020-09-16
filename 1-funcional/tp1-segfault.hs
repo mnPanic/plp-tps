@@ -1,3 +1,14 @@
+{- TP1 - Programación Funcional
+
+Grupo: segfault
+Integrantes:
+
+- Elias Nahuel Cerdeira (692/12)
+- Joaquín Ituarte (457/13)
+- Manuel Panichelli (72/18)
+
+-}
+
 import Data.List
 import Test.HUnit
 import Midi.Midi
@@ -24,26 +35,30 @@ foldNat caso0 casoSuc n | n == 0 = caso0
 
 -- Ejercicio 1
 
--- hace sonar la primera melodia, luego de d hace sonar la segunda en paralelo
+-- Hace sonar la primera melodia, luego de d hace sonar la segunda en paralelo
 superponer :: Melodia -> Duracion -> Melodia -> Melodia
 superponer m1 d m2 = Paralelo [m1, Secuencia (Silencio d) m2]
 
 -- Sugerencia: usar foldNat
--- reproduce la melodia m n veces esperando d antes de reproducir cada una
+-- Reproduce la melodia m n veces esperando d antes de reproducir cada una
 canon :: Duracion -> Integer -> Melodia -> Melodia
 canon d n m = foldNat m (superponer m d) (n-1)
 
--- dada una lista no vacia de melodias las toca en secuencia preservando el
+-- Dada una lista no vacia de melodias las toca en secuencia preservando el
 -- orden.
 secuenciar :: [Melodia] -> Melodia -- Se asume que la lista no es vacía.
--- secuenciar = foldl1 (\acc x -> (Secuencia acc x))
-secuenciar = foldl1 (Secuencia)
+-- La diferencia entre las clases de folds es que `foldr` funciona para listas
+-- infinitas y `foldl` no. Usamos foldr1 porque no tiene sentido definir el caso
+-- base si como precondicion tenemos que es no vacia.
+-- secuenciar = foldl1 (\acc x -> (Secuencia acc x))  -- mas explicito
+secuenciar = foldr1 Secuencia
 
 -- Ejercicio 2
 
 -- es como canon pero genera una melodia infinita
 -- sug foldr
 canonInfinito :: Duracion -> Melodia -> Melodia
+-- canonInfinito d m = foldr1 (\_ r -> superponer m d r) [1..]  -- otra forma
 canonInfinito d m = foldr1 (\x r -> superponer x d r) (repeat m)
 
 -- Ejercicio 3
@@ -56,19 +71,18 @@ foldMelodia ::
   -> Melodia -> a
 
 foldMelodia cSil cNot cSeq cPar m = case m of
-  (Silencio d) -> cSil d
-  (Nota t d) -> cNot t d
-  (Secuencia m1 m2) -> cSeq (rec m1) (rec m2)
-    where rec = foldMelodia cSil cNot cSeq cPar
-  (Paralelo ms) -> cPar $ map rec ms
+      (Silencio d) -> cSil d
+      (Nota t d) -> cNot t d
+      (Secuencia m1 m2) -> cSeq (rec m1) (rec m2)
+      (Paralelo ms) -> cPar $ map rec ms
     where rec = foldMelodia cSil cNot cSeq cPar
 
 -- Ejercicio 4
 
--- aplica la funcion a cada nota de la melodia, manteniendo la estructura
+-- Aplica la funcion a cada nota de la melodia, manteniendo la estructura
 mapMelodia :: (Tono -> Tono) -> Melodia -> Melodia
-mapMelodia f = foldMelodia (Silencio) cNot (Secuencia) (Paralelo)
-  where cNot t d = Nota (f t) d
+mapMelodia f = foldMelodia Silencio cNot Secuencia Paralelo
+  where cNot t = Nota (f t)
 
 -- transportar n m es la melodia m transportada n semitonos
 -- Equivalente a sumarle el valor de n a cada tono de m
@@ -80,28 +94,31 @@ transportar n = mapMelodia (+n)
 duracionTotal :: Melodia->Duracion
 duracionTotal = foldMelodia cSil cNot cSeq cPar
   where cSil = id
-        cNot t d = d
+        -- cNot = flip const  -- esoterico, alternativa
+        -- cNot = const id
+        cNot t = id
         cSeq = (+)
-        cPar [] = 0
+        cPar [] = 0           -- paralelo de 0 melodias dura 0 beats
         cPar ds = maximum ds
 
---Sugerencia: usar round y fromIntegral
+-- Sugerencia: usar round y fromIntegral
 cambiarVelocidad :: Float -> Melodia -> Melodia
 cambiarVelocidad factor = foldMelodia cSil cNot cSeq cPar
   where escalar d = round ((fromIntegral d) * factor)
+        -- escalar = round . factor . fromIntegral -- alternativa
         cSil d = Silencio $ escalar d
         cNot t d = Nota t $ escalar d
         cSeq = Secuencia
         cPar = Paralelo
 
--- invierte una melodia, las notas y silencios se reproducen en el orden inverso
+-- Invierte una melodia, las notas y silencios se reproducen en el orden inverso
 invertir :: Melodia -> Melodia
 invertir = foldMelodia cSil cNot cSeq cPar
   where cSil = Silencio
         cNot = Nota
+        -- cSeq = flip Secuencia      -- alternativa
         cSeq m1 m2 = Secuencia m2 m1
-        cPar ms = (Paralelo $ reverse ms)
-
+        cPar = Paralelo
 
 -- Ejercicio 5
 
@@ -111,7 +128,7 @@ invertir = foldMelodia cSil cNot cSeq cPar
 -- Se puede usar recursión explícita.
 -- Resaltar las partes del código que hacen que no se ajuste al esquema fold.
 notasQueSuenan :: Instante -> Melodia -> [Tono]
---Sugerencia: usar concatMap.
+-- Sugerencia: usar concatMap.
 notasQueSuenan i m
   | i < 0 = []
   | otherwise = case m of
@@ -124,6 +141,15 @@ notasQueSuenan i m
         where dm1 = duracionTotal m1
       (Paralelo ms) -> concatMap (notasQueSuenan i) ms
 
+{-
+Cosas que no funcionan
+
+- foldMelodia: No es SOLO recursion estructural, es recursion sobre i y sobre la
+  estructura de la melodia, entonces no se puede hacer de la forma usual con
+  foldMelodia.
+-}
+
+-- Intento de implementacion fallida
 notasQueSuenan' :: Melodia -> (Instante -> [Tono])
 notasQueSuenan' = foldMelodia cSil cNot cSeq cPar
   where cSil d = (\i -> [])
@@ -133,13 +159,6 @@ notasQueSuenan' = foldMelodia cSil cNot cSeq cPar
         -- melodia.
         cSeq f1 f2 = (\i -> (f1 i) ++ (f2 i))
         cPar fns = (\i -> concatMap ($i) fns)
-
-{-
-Cosas que no funcionan
-
-- foldMelodia: No es SOLO recursion estructural, es recursion sobre i y sobre la
-  estructura de la melodia.
--}
 
 -- Ejercicio 6
 
@@ -275,13 +294,11 @@ tests = do runTestTT allTests
 allTests = test [
   "ejercicio1" ~: testsEj1,
   "ejercicio2" ~: testsEj2,
---  "ejercicio3" ~: testsEj3,
+  --"ejercicio3" ~: testsEj3,
   "ejercicio4" ~: testsEj4,
-  "ejercicio5" ~: testsEj5,
-  "ejercicio6" ~: testsEj6
+  "ejercicio5" ~: testsEj5
+  --"ejercicio6" ~: testsEj6
   ]
-
--- Ejemplos sólo para mostrar cómo se escriben los tests. Reemplazar por los tests propios.
 
 testsEj1 = test [
   -- sanity check
@@ -294,7 +311,7 @@ testsEj1 = test [
   canon 2 3 (Nota 60 4) ~=? Paralelo [Nota 60 4,Secuencia (Silencio 2) (Paralelo [Nota 60 4,Secuencia (Silencio 2) (Nota 60 4)])],
   
   -- secuenciar
-  secuenciar [Nota 60 1, Nota 60 2, Nota 60 3] ~=? Secuencia (Secuencia (Nota 60 1) (Nota 60 2)) (Nota 60 3)
+  secuenciar [Nota 60 1, Nota 60 2, Nota 60 3] ~=? Secuencia (Nota 60 1) (Secuencia (Nota 60 2) (Nota 60 3))
   ]
 testsEj2 = test [
   -- canonInfinito, tambien testea notasQueSuenan #efficient
@@ -303,10 +320,11 @@ testsEj2 = test [
   notasQueSuenan 4 (canonInfinito 5 $ Nota 60 3) ~=? [],
   notasQueSuenan 6 (canonInfinito 5 $ Nota 60 3) ~=? [60]
   ]
---testsEj3 = test [
-  -- foldMelodia se testea con el resto de los ejercicios.
-  -- https://kentcdodds.com/blog/write-tests/
---  ]
+{-
+testsEj3 = test [
+  foldMelodia se testea con el resto de los ejercicios.
+  ]
+-}
 testsEj4 = test [
   -- mapMelodia
   mapMelodia (*2) acorde ~=? Paralelo [Nota 120 10, Secuencia (Silencio 3) (Nota 128 7), Secuencia (Silencio 6) (Nota 134 4)],
@@ -322,7 +340,7 @@ testsEj4 = test [
 
   -- invertir
   -- Paralelo [_do 10, Secuencia (Silencio 3) (_mi 7), Secuencia (Silencio 6) (_sol 4)]
-  invertir acorde ~=? Paralelo [Secuencia (Nota 67 4) (Silencio 6),Secuencia (Nota 64 7) (Silencio 3),Nota 60 10]
+  invertir acorde ~=? Paralelo [Nota 60 10,Secuencia (Nota 64 7) (Silencio 3),Secuencia (Nota 67 4) (Silencio 6)]
   ]
 testsEj5 = test [
   -- acorde: Paralelo [_do 10, Secuencia (Silencio 3) (_mi 7), Secuencia (Silencio 6) (_sol 4)]
@@ -332,7 +350,10 @@ testsEj5 = test [
   notasQueSuenan 10 acorde ~=? [60, 64, 67], -- do re sol
   notasQueSuenan 20 acorde ~=? []
   ]
+
+{-
 testsEj6 = test [
   2 ~=? 1+1,
   4 ~=? 2*2
   ]
+-}
