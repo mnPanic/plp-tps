@@ -72,7 +72,7 @@ infer' (AppExp u v) n = case infer' u n of -- intentamos primero inferir el tipo
       res'@(Error _) -> res' -- no podemos inferir el tipo de v, devolvemos el error
       OK (n'', (c'', e'', t'')) ->
         -- pudimos inferir el tipo de v. Ahora tenemos que unificar
-        case mgu $ (t', (TFun t'' (TVar n''))) : goals of -- unificamos:
+        case mgu $ (t', (TFun t'' (TVar n''))) : goals of -- unificamos (y obtenemos mgu = subst):
         -- t' (tipo de u) con (t'' -> n'') (funcion que va de tipo de v, a tipo fresco n'' dado por infer sobre v)
         -- goals (los contextos de u y v)
         --
@@ -117,21 +117,30 @@ infer' (LamExp x _ e) n = case infer' e n of -- intentamos inferir el tipo de la
 
 -- EXTENSIÓN
 
+-- Empty
 infer' (EmptyListExp _) n = OK (n + 1, (emptyContext, EmptyListExp (TVar n), TList (TVar n)))
-infer' (ConsExp u v) n = case infer' u n of
-  res@(Error _) -> res
+-- Cons
+infer' (ConsExp u v) n = case infer' u n of -- Intentamos inferir el tipo de u
+  res@(Error _) -> res -- no podemos inferir el tipo de u, devolvemos el error
   OK (n', (c', e', t')) ->
-    case infer' v n' of
-      res'@(Error _) -> res'
+    -- pudimos inferir el tipo de u. c' == context_u, e' == expresion u con anotaciones, t' == tipo de e'
+    case infer' v n' of -- intentamos ahora inferir el tipo de v
+      res'@(Error _) -> res' -- no podemos inferir el tipo de u, devolvemos el error
       OK (n'', (c'', e'', t'')) ->
-        case mgu $ (t'', (TList t')) : goals of
-          UError u1 u2 -> uError u1 u2
+        -- pudimos inferir el tipo de v. c'' == context_v, e'' == expresion v con anotaciones, t'' == tipo de e''
+        case mgu $ (t'', (TList t')) : goals of -- unificamos (y obtenemos mgu = subst):
+        -- t'' con [t'] (unificar el tipo "lista del tipo de e' " == [t'], con el tipo de e'' == t'')
+        -- goals == unificacion de contextos de e' (u) y e'' (v)
+        --
+          UError u1 u2 -> uError u1 u2 -- No pudimos obtener el mgu, devolver el error
           UOK subst ->
+            -- obtubimos el mgu, retornamos:
             OK
-              ( n'' + 1,
-                ( joinC [subst <.> c', subst <.> c''],
-                  subst <.> (ConsExp e' e''),
-                  subst <.> (t'')
+              ( n'' + 1, -- siguiente tipo fresco -- TODO porque +1? osea,no cambia en nada pero nos salteamos un valor
+                ( -- Juicio de tipado:
+                  joinC [subst <.> c', subst <.> c''], -- Contexto: union de los contextos de e' y e'' (u y v con anot), ambos sustituidos
+                  subst <.> (ConsExp e' e''), -- Expresion: sustitucion sobre la expresion con anotaciones
+                  subst <.> (t'') -- Tipo: t'' == tipo de e'' == tipo inferido de v
                 )
               )
         where
