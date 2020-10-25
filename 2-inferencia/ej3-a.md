@@ -18,5 +18,16 @@ $W(zip~U~and~V~with~x,y \leadsto W) = \displaystyle\bigcup_{i=1}^{3}S\Gamma_i \r
 
 - $W(U) = \Gamma_1 \rhd M:\sigma$
 - $W(V) = \Gamma_2 \rhd N:\tau$
-- $W(W) = \{\Gamma_3, x:s_0, y:s_1\} \rhd O:\rho$
-- $S = MGU\{\sigma \doteq [s_1], \tau \doteq [s_2]\} \cup \{\sigma_1 \doteq \sigma_2 \mid x:\sigma_1 \in \Gamma_i,x:\sigma_2 \in \Gamma_j, i\neq j\}$
+- $W(W) = \Gamma_{3} \rhd O:\rho$
+- $\Gamma_{3'} = \Gamma_3 \ominus \{x,\ y\}$
+- $S = MGU\{\sigma \doteq [\tau_x], \tau \doteq [\tau_y]\} \cup \{\sigma_1 \doteq \sigma_2 \mid x:\sigma_1 \in \Gamma_i,x:\sigma_2 \in \Gamma_j, i,j \in \{1,2,3'\}\}$
+- $\tau_y = \begin{cases}
+   \beta  & si\ y:\beta \in \Gamma_3     \\
+    \text{variable fresca si no}
+  \end{cases} 
+  $
+- $\tau_x = \begin{cases}
+   \alpha  & si\ x:\alpha \in \Gamma_3     \\
+    \text{variable fresca si no}
+  \end{cases} 
+  $

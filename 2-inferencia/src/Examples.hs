@@ -1,5 +1,4 @@
-module Examples(expr, sol)
-where
+module Examples (expr, sol) where
 
 expr :: Int -> String
 -- Ejemplos con Var, Zero, Succ, Lam, App, listas y ZipWith
@@ -92,9 +91,9 @@ sol 37 = "{f:Nat -> Nat -> Nat} >>\nzip (0 :: []{Nat}) and (succ(0) :: []{Nat}) 
 -- Extras
 sol 38 = "{} >>\nzip\n(0 :: []{Nat})\nand\n((\\z:t0 -> z) :: []{t0 -> t0})\nwith\nx,y\n~>\nsucc(x)\n: [Nat]"
 sol 39 = "Cannot unify t2 -> t2 and Nat"
-sol 40 = "{x:t0, y:t0} >>\nzip (x :: (y :: []{t0})) and (0 :: []{Nat}) with x,y ~> succ(y) : [Nat]"
-sol 41 = "{y:[Nat]} >>\nzip ((\f:t0 -> 0) :: []{t0 -> Nat})\nand\ny\nwith\nx,y\n~>\nsucc(y)\n: [Nat]"
+sol 40 = "{x:t0, y:t0} >>\nzip (x :: (y :: []{t0})) and (0 :: []{Nat}) with x,y ~> succ(y)\n: [Nat]"
+sol 41 = "{y:[Nat]} >>\nzip ((\\f:t0 -> 0) :: []{t0 -> Nat}) and y with x,y ~> succ(y)\n: [Nat]"
 sol 42 = "{g:(t0 -> t0) -> t1} >>\nzip ((\\x:t0 -> x) :: []{t0 -> t0}) and []{t2} with x,y ~> g x\n: [t1]"
-sol 43 = "{y:(t0 -> t0) -> t1} >>\nzip\n(0 :: []{Nat})\nand\n((\\y:t0 -> y) :: []{t0 -> t0})\nwith\nx,y\n~>\ny z\n: [t1]"
+sol 43 = "{y:(t0 -> t0) -> t1} >>\nzip\n(0 :: []{Nat})\nand\n((\\y:t0 -> y) :: []{t0 -> t0})\nwith\nx,z\n~>\ny z\n: [t1]"
 sol 44 = "Cannot unify Nat and [Nat]"
 sol n = error $ "La solucion " ++ show n ++ " no esta definida"

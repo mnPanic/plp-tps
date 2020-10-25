@@ -146,30 +146,44 @@ infer' (ConsExp u v) n = case infer' u n of -- Intentamos inferir el tipo de u
         where
           goals = foldr f [] (domainC c'')
           f = (\x -> (\r -> if elem x (domainC c') then (evalC c' x, evalC c'' x) : r else r))
-infer' (ZipWithExp u v x y w) n = case infer' u n of
-  res@(Error _) -> res
-  OK (n1, (c1, e1, t1)) ->
-    case infer' v n1 of
-      res1@(Error _) -> res1
-      OK (n2, (c2, e2, t2)) ->
-        case infer' w n2 of
-          res4@(Error _) -> res4
-          OK (n3, (c3, e3, t3)) ->
-            case mgu $ [(t1, (TList (TVar n3))), (t2, (TList (TVar (n3 + 1))))] ++ goals of
-              UError u1 u2 -> uError u1 u2
+-- ZipWith
+infer' (ZipWithExp u v x y w) n = case infer' u n of -- Intenamos inferir el tipo de u
+  res@(Error _) -> res -- si no pudimos inferir el tipo, retornamos el error
+  OK (n1, (c1, e1, sigma)) ->
+    -- pudimos inferir el tipo
+    case infer' v n1 of -- Intentamos inferir el tipo de v
+      res1@(Error _) -> res1 -- No pudimos inferirlo, retornamos el error
+      OK (n2, (c2, e2, tau)) ->
+        -- Pudimos inferirlo
+        case infer' w n2 of -- Intentamos inferir el tipo de w
+          res4@(Error _) -> res4 -- No pudimos inferirlo, retornamos el error
+          OK (n3, (c3, e3, rho)) ->
+            -- Pudimos inferirlo
+            case mgu $ -- Intentamos obtener el mgu
+              [ (sigma, (TList tauX)), -- Unificacion de sigma con [tauX]
+                (tau, (TList tauY)) -- Unificacion de tau con [tauY]
+              ]
+                ++ goals of -- Unificacion de contextos
+              UError u1 u2 -> uError u1 u2 -- No pudimos obtener el mgu, retornamos el error
               UOK subst ->
+                -- Pudimos definir el MGU. Retornamos:
+                --
                 OK
-                  ( n3 + 2,
-                    ( joinC [subst <.> c | c <- cs],
-                      subst <.> (ZipWithExp e1 e2 x y e3),
-                      subst <.> (TList t3)
+                  ( n3 + 2, -- salteamos variables si no se usaron las frescas porque no afecta.
+                    ( -- Juicio de tipado:
+                      joinC [subst <.> c | c <- cs], -- Contexto: Union de la sustitucion de los contextos
+                      subst <.> (ZipWithExp e1 e2 x y e3), -- Expresion: expresion con anotaciones
+                      subst <.> (TList rho) -- Tipo: [rho], tipo inferido de la expresion sin anotaciones
                     )
                   )
             where
-              goals = concat [aux (cs !! i) (cs !! j) | i <- [0 .. 2], j <- [0 .. 2], i /= j]
-              aux c' c'' = foldr (\x -> (\r -> if elem x (domainC c') then (evalC c' x, evalC c'' x) : r else r)) [] (domainC c'')
+              tauX = if elem x (domainC c3) then evalC c3 x else TVar n3 -- tauX: mismo tipo si ya estaba en c3. Variable fresca si no
+              tauY = if elem y (domainC c3) then evalC c3 y else TVar (n3 + 1) -- tauY: mismo tipo si ya estaba en c3. Variable fresca si no
+              goals = concat [unificarContexto (cs !! i) (cs !! j) | i <- [0 .. 2], j <- [0 .. 2]] -- Unificacion de los contextos
+              unificarContexto c' c'' = foldr (\x -> (\r -> if elem x (domainC c') then (evalC c' x, evalC c'' x) : r else r)) [] (domainC c'')
               --c3' = extendC (extendC c3 x (TVar n3)) y (TVar (n3+1))
-              cs = [c1, c2, c3]
+              c3' = removeC (removeC c3 x) y -- c3' es el contexto c3 sin x ni y
+              cs = [c1, c2, c3'] -- conjunto de contextos con los candidatos a unificar
 
 --------------------------------
 -- YAPA: Error de unificacion --
