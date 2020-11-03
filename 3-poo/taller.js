@@ -48,14 +48,34 @@ function ejercicio2() {
 	String.prototype.tail = function () {
 		return this.slice(1)
 	}
-
 }
 
 // Ejercicio 3
 function ejercicio3() {
-	// Completar
-	Estado = undefined;
+	// Ejercicio  3.1
+	Estado = function (esFinal, transiciones) {
+		this.esFinal = esFinal
+		this.transiciones = transiciones
+		this.acepta = function (s) {
+			actual = this
+			for (var i = 0; i < s.length; i++) {
+				transicion = actual.transiciones[s[i]]
+				if (transicion === undefined) {
+					return false
+				}
 
+				actual = transicion
+			}
+
+			return actual.esFinal
+		}
+	};
+
+	// Ejercicio 3.2
+	tmpEstado = new Estado(true, {})
+	q1.acepta = tmpEstado.acepta
+	q2.acepta = tmpEstado.acepta
+	q3.acepta = tmpEstado.acepta
 }
 
 // Ejercicio 4
