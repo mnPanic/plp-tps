@@ -41,7 +41,13 @@ function ejercicio1() {
 
 // Ejercicio 2
 function ejercicio2() {
-	// Completar
+	String.prototype.head = function () {
+		return this[0]
+	}
+
+	String.prototype.tail = function () {
+		return this.slice(1)
+	}
 
 }
 
