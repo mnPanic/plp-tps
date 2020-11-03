@@ -72,16 +72,17 @@ function ejercicio3() {
 	};
 
 	// Ejercicio 3.2
-	tmpEstado = new Estado(true, {})
-	q1.acepta = tmpEstado.acepta
-	q2.acepta = tmpEstado.acepta
-	q3.acepta = tmpEstado.acepta
+	for (let q of [q1, q2, q3]) {
+		Object.setPrototypeOf(q, new Estado(false, {}))
+	}
 }
 
 // Ejercicio 4
 function ejercicio4() {
-	// Completar
-
+	Estado.prototype.nuevaTransicion = function (etiqueta, destino) {
+		this.transiciones = Object.assign({}, this.transiciones)
+		this.transiciones[etiqueta] = destino
+	}
 }
 
 // Ejercicio 5
