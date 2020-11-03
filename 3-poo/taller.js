@@ -88,23 +88,93 @@ function ejercicio4() {
 // Ejercicio 5
 function ejercicio5() {
 	// Completar
-	algunoAcepta = undefined;
+	algunoAcepta = function (s, qs) {
+		if (!Array.isArray(qs)) {
+			qs = [qs]
+		}
 
+		// qs aca es un array
+		return qs.some((c) => c.acepta(s))
+	};
 }
 
 // Ejercicio 6
 function ejercicio6() {
-	// Completar
+	Estado.prototype.nuevaTransicionND = function (etiqueta, destino) {
 
+		// Item 1 - La transicion no esta definida para la transicion
+		if (this.transiciones[etiqueta] == undefined) {
+			this.nuevaTransicion(etiqueta, destino)
+			return
+		}
+
+		// La etiqueta ya tiene destinos. Haciendo que siempre sean destinos temporalmente
+		destinos = this.transiciones[etiqueta]
+		if (!Array.isArray(destinos)) {
+			destinos = [destinos]
+		}
+
+		// Item 3 - La etiqueta ya tiene una transicion hacia el destino
+		if (destinos.includes(destino)) {
+			return
+		}
+
+		// A esta altura destinos no contiene a destino y el automata no es ya no es más deterministico
+
+
+		// Item 2 - Agrego el destino a la lista de transiciones
+		this.transiciones = Object.assign({}, this.transiciones)
+		this.transiciones[etiqueta] = destinos.slice()
+		this.transiciones[etiqueta].push(destino)
+
+		// Cambio el comportamiento de acepta a uno no determinista
+		this.acepta = function (s) {
+			if (s.head() == "") {
+				return this.esFinal
+			}
+
+			if (this.transiciones[s.head()] === undefined) {
+				return false
+			}
+
+			return algunoAcepta(s.tail(), this.transiciones[s.head()])
+		}
+	}
 }
 
 // Ejercicio 7
 function ejercicio7() {
-	// Completar
-	esDeterministico = undefined;
+
+	esDeterministico2 = function (q, estadosTransitados) {
+		// Si ya recorri el nodo entonces lo anterior era deterministico
+		if (estadosTransitados.includes(q)) {
+			return true
+		}
+
+		estadosTransitados.push(q)
+
+		for (let etiqueta in q.transiciones) {
+			destino = q.transiciones[etiqueta]
+			if (Array.isArray(destino)) {
+				return false
+			}
+
+			// Si la etiqueta sigue un camino NO deterministico, retorno que no lo es
+			if (!esDeterministico2(destino, estadosTransitados)) {
+				return false
+			}
+
+			// Else continuo checkeando las siguientes etiquetas
+		}
+
+		return true
+	};
+
+	esDeterministico = function (q) {
+		return esDeterministico2(q, [])
+	}
 
 }
-
 
 // Test Ejercicio 1
 function testEjercicio1(res) {
