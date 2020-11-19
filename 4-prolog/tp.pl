@@ -30,7 +30,7 @@ costo(establo,      400).
 
 % Ej 1 : costo para listas (tanto de batallones como de edificios)
 % costo ( +L , -C )
-% Enunciado: Extender el predicado "costos" para que funcione con listas, tanto
+% Enunciado: Extender el predicado "costo" para que funcione con listas, tanto
 % de batallones como de edificios.
 
 costo([], 0).
@@ -45,12 +45,49 @@ costo([E|L], C) :-
 % Ej 2 : instanciar un ejército arbitrario
 % ejercito ( -E )
 
-% Reversibilidad:
+% [(arquero, 1)]
+
+desde(X, X).
+desde(X, Y) :- N is X+1, desde(N, Y).
+
+% Consideramos al ejercito como un conjunto.
+% ejercito(-E)
+ejercito(E) :- desde(1, N), armarEjercitoDeTam(E, N).
+
+armarEjercitoDeTam([], 0).
+armarEjercitoDeTam([(U, K)|E], N) :-
+    unidad(U), between(1, N, K), N2 is N - K, armarEjercitoDeTam(E, N2).
+
+% b. Reversibilidad:
+%  -E: Si no viene instanciado, genera ejercitos para todos los N
+%  +E: Si viene instanciado, intenta con todos los N hasta que lo encuentra, y
+%      devuelve true. Si no es un ejercito posible, se cuelga.
+% Concluimos que no es reversible.
+%  Para hacerlo, habria que acotar N por el tamano del ejercito si esta
+%  instanciado.
 
 % Ej 3 : instancia una lista de edificios necesarios para el ejército
 % edificiosNecesarios ( +Ej , -Ed )
+edificiosNecesarios(Ej, Ed) :-
+    tieneLosNecesarios(Ej, Ed),
+    noTieneDemas(Ej, Ed),
+    sinRepetidos(Ed).
 
-% Reversibilidad:
+tieneLosNecesarios([], _).
+tieneLosNecesarios([(U, _)|Ej], Ed) :-
+    unidad(U), entrena(U, V),
+    member(V, Ed),
+    tieneLosNecesarios(Ej, Ed).
+
+sinRepetidos(L) :- is_set(L).
+
+noTieneDemas(_, []).
+noTieneDemas(Ej, [E|Ed]) :- 
+    unidad(U), entrena(U, E), member((U, _), Ej),
+    noTieneDemas(Ej, Ed).
+
+% b. Reversibilidad:
+% - Ej es reversible pero no d
 
 % Ej 4 : índice de superioridad para unidades
 % ids ( +A , +B , -I )
