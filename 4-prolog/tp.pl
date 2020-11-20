@@ -176,10 +176,15 @@ puebloPara(En, A, Ed, Ej) :- nonvar(A),
   edificiosNecesarios(Ej, Ed),
   costo(Ed, CEd), costo(Ej, CEj),
   Min is ceiling( (CEd + CEj) / 50 ),
-  A < Min.
+  A >= Min.
 
 % Ej 7 : pueblo óptimo (en cantidad de aldenos necesarios)
 % puebloOptimoPara( +En , ?A , -Ed , -Ej )
+
+puebloOptimoPara(En, A, Ed, Ej) :-
+  puebloPara(En, A, Ed, Ej), not(hayMejorPueblo(En, A)).
+
+hayMejorPueblo(En, A) :- puebloPara(En, A2, _, _), A2 < A.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TESTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
