@@ -1,3 +1,12 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TP4 - Grupo 'segfault'
+%
+% Integrantes:
+% - Joaquín Ituarte
+% - Elías Cerdeira
+% - Manuel Panichelli
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % Unidades
 % Este predicado indica cuáles son las unidades militares disponibles.
 unidad(lancero).
@@ -45,8 +54,7 @@ costo([E|L], C) :-
 % Ej 2 : instanciar un ejército arbitrario
 % ejercito ( -E )
 
-% [(arquero, 1)]
-
+% Copiado de la clase
 desde(X, X).
 desde(X, Y) :- N is X+1, desde(N, Y).
 
@@ -68,27 +76,22 @@ armarEjercitoDeTam([(U, K)|E], N) :-
 
 % Ej 3 : instancia una lista de edificios necesarios para el ejército
 % edificiosNecesarios ( +Ej , -Ed )
-edificiosNecesarios(Ej, Ed) :-
-    tieneLosNecesarios(Ej, Ed),
-    noTieneDemas(Ej, Ed),
-    sinRepetidos(Ed), !.
 
-tieneLosNecesarios([], _).
-tieneLosNecesarios([(U, _)|Ej], Ed) :-
-    unidad(U), entrena(U, V),
-    member(V, Ed),
-    tieneLosNecesarios(Ej, Ed).
+edificiosNecesarios([], []).
+edificiosNecesarios([(U, _)|Ej], Ed) :- 
+    edificiosNecesarios(Ej, Ed),
+    unidad(U), entrena(U, E), member(E, Ed).
 
-sinRepetidos(L) :- is_set(L).
-
-noTieneDemas(_, []).
-noTieneDemas(Ej, [E|Ed]) :- 
-    unidad(U), entrena(U, E), member((U, _), Ej),
-    noTieneDemas(Ej, Ed).
+edificiosNecesarios([(U, _)|Ej], [E|Ed2]) :- 
+    edificiosNecesarios(Ej, Ed2),
+    unidad(U), entrena(U, E), not(member(E, Ed2)).
 
 % b. Reversibilidad:
-% - Ej es reversible pero no d
+% -Ej, -Ed: Se cuelga porque primero itera sobre Ej.
+% +Ej, +Ed: Funciona, ya que tiene una cantidad de casos acotada para verificar.
 
+% c. Como no es reversible en Ej, lo redefinimos para instanciar con todos los
+% posibles ejercitos.
 edificiosNecesarios2(Ej, Ed) :- ejercito(Ej), edificiosNecesarios(Ej, Ed).
 
 % Ej 4 : índice de superioridad para unidades
@@ -106,7 +109,7 @@ edificiosNecesarios2(Ej, Ed) :- ejercito(Ej), edificiosNecesarios(Ej, Ed).
   % multiplicativo del caso contemplado.
   % c) no se cuelgue ni genere soluciones repetidas.
 
-% wrapper para no duplicar (es esto chancho?)
+% wrapper para no duplicar
 ids(U, V, I) :- ids2(U, V, I), !.
 
 ids2(jinete,       arquero,      1.5).
