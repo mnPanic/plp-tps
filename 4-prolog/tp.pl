@@ -44,11 +44,11 @@ costo(establo,      400).
 
 costo([], 0).
 costo([(U, N)|L], C) :-
-    unidad(U), costo(U, CU), costo(L, CL),
+    costo(U, CU), costo(L, CL),
     C is N * CU + CL.
 
 costo([E|L], C) :-
-    edificio(E), costo(E, CE), costo(L, CL),
+    costo(E, CE), costo(L, CL),
     C is CE + CL.
 
 % Ej 2 : instanciar un ejército arbitrario
@@ -62,14 +62,18 @@ desde(X, Y) :- N is X+1, desde(N, Y).
 % ejercito(-E)
 ejercito(E) :- desde(1, N), armarEjercitoDeTam(E, N).
 
+% armarEjercitoDeTam(-E, +N)
 armarEjercitoDeTam([], 0).
 armarEjercitoDeTam([(U, K)|E], N) :-
     unidad(U), between(1, N, K), N2 is N - K, armarEjercitoDeTam(E, N2).
 
 % b. Reversibilidad:
+%
 %  -E: Si no viene instanciado, genera ejercitos para todos los N
 %  +E: Si viene instanciado, intenta con todos los N hasta que lo encuentra, y
-%      devuelve true. Si no es un ejercito posible, se cuelga.
+%      devuelve true. Pero si se piden mas soluciones, se cuelga.
+%      Si no es un ejercito posible, se cuelga.
+%
 % Concluimos que no es reversible.
 %  Para hacerlo, habria que acotar N por el tamano del ejercito si esta
 %  instanciado.
@@ -80,11 +84,11 @@ armarEjercitoDeTam([(U, K)|E], N) :-
 edificiosNecesarios([], []).
 edificiosNecesarios([(U, _)|Ej], Ed) :- 
     edificiosNecesarios(Ej, Ed),
-    unidad(U), entrena(U, E), member(E, Ed).
+    entrena(U, E), member(E, Ed).
 
 edificiosNecesarios([(U, _)|Ej], [E|Ed2]) :- 
     edificiosNecesarios(Ej, Ed2),
-    unidad(U), entrena(U, E), not(member(E, Ed2)).
+    entrena(U, E), not(member(E, Ed2)).
 
 % b. Reversibilidad:
 % -Ej, -Ed: Se cuelga porque primero itera sobre Ej.
@@ -92,6 +96,7 @@ edificiosNecesarios([(U, _)|Ej], [E|Ed2]) :-
 
 % c. Como no es reversible en Ej, lo redefinimos para instanciar con todos los
 % posibles ejercitos.
+% No es reversible en Ej pues ejército tampoco lo es.
 edificiosNecesarios2(Ej, Ed) :- ejercito(Ej), edificiosNecesarios(Ej, Ed).
 
 % Ej 4 : índice de superioridad para unidades
@@ -110,6 +115,7 @@ edificiosNecesarios2(Ej, Ed) :- ejercito(Ej), edificiosNecesarios(Ej, Ed).
   % c) no se cuelgue ni genere soluciones repetidas.
 
 % wrapper para no duplicar
+% a.c.
 ids(U, V, I) :- ids2(U, V, I), !.
 
 ids2(jinete,       arquero,      1.5).
@@ -119,12 +125,16 @@ ids2(lancero,      arquero,      0.6).
 ids2(guerrillero,  lancero,      1.1).
 ids2(guerrillero,  arquero,      2).
 
+% a.a.
 ids2(U, U, 1) :- unidad(U).
-ids2(U, V, I) :- unidad(U), unidad(V), ids2(V, U, I2), I is 1/I2. %, !.
+
+% a.b.
+ids2(U, V, I) :- unidad(U), unidad(V), ids2(V, U, I2), I is 1/I2.
 
 % Reversibilidad:
 % No es reversible, porque matchea infinitamente con la ultima clausula.
-% Se puede arreglar agregando ! al final.
+% Se puede arreglar haciendo lo siguiente
+%   ids2(U, V, I) :- unidad(U), unidad(V), ids2(V, U, I2), !, I is 1/I2.
 
 % Ej 5
 % ids ( +A , +B , -I )
@@ -141,15 +151,18 @@ gana([A|AS],[B|BS]) :- gana(B,A), gana(AS,[B|BS]), !.
 % puede tener más de 5 unidades
 % entre todos los batallones que lo componen.
 
+% Decisión: Generamos siempre ejércitos y no batallones, al igual que el ejemplo
+% del enunciado.
+
 % tamanoEjercito(+E, ?N)
 tamanoEjercito([], 0).
 tamanoEjercito([(U, K)|E], N) :- unidad(U), tamanoEjercito(E, N2), N is K + N2.
 
-% "hack"
+% Workaround para que funcione tanto para batallones como para ejércitos.
 ganaA(A, (U, C), N) :- ganaA(A, [(U, C)], N).
 ganaA((U, C), B, N) :- ganaA([(U, C)], B, N).
 
-ganaA(A, B, N) :- 
+ganaA(A, B, N) :-
   % Si N no viene instanciado, hacemos todos los posibles hasta |B|.
   var(N), tamanoEjercito(B, BN), between(1, BN, N),
   armarEjercitoDeTam(A, N), gana(A, B).
@@ -158,10 +171,19 @@ ganaA(A, B, N) :-
   % Si N viene instanciado, generamos un ejercito de exactamente ese tamano.
   nonvar(N), armarEjercitoDeTam(A, N), gana(A, B).
 
+% Nota: Separamos en var y nonvar pues sino estariamos restringiendo a que el
+% tamaño del ejército A sea menor o igual al de B
+% Podriamos hacer esto si |A| <= |B| siempre:
+%
+%   ganaA(A, B, N) :-
+%     tamanoEjercito(B, BN), between(1, BN, N),
+%     armarEjercitoDeTam(A, N), gana(A, B).
+%
+
 % ¿Usaron "ejercito"? ¿por qué?
 %
-% No, pero usamos la funcion que usa internamente ejercito, ya que resulta mas
-% eficiente que generar todos los ejercitos y chequear su tamano.
+% No, ya que ejercito es un predicado de generacion infinita, que no se puede
+% usar para generacion finita.
 
 % Ej 6 : instancia un pueblo para derrotar a un ejército enemigo
 % puebloPara ( +En , ?A , -Ed , -Ej )
@@ -171,6 +193,7 @@ puebloPara(En, A, Ed, Ej) :- var(A),
   ganaA(Ej, En, _),
   edificiosNecesarios(Ej, Ed),
   costo(Ed, CEd), costo(Ej, CEj),
+  % Cada aldeano provee 50 unidades de recursos.
   A is ceiling( (CEd + CEj) / 50 ).
 
 puebloPara(En, A, Ed, Ej) :- nonvar(A),
@@ -180,6 +203,10 @@ puebloPara(En, A, Ed, Ej) :- nonvar(A),
   costo(Ed, CEd), costo(Ej, CEj),
   Min is ceiling( (CEd + CEj) / 50 ),
   A >= Min.
+
+% Nota: Dividimos en casos pues sino cuando A estuviera instanciado estaríamos
+% restringiendo innecesariamente que sea exactamente el costo necesario, cuando
+% podría bien ser mayor.
 
 % Ej 7 : pueblo óptimo (en cantidad de aldenos necesarios)
 % puebloOptimoPara( +En , ?A , -Ed , -Ej )
