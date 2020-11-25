@@ -2,9 +2,10 @@
 % TP-PL (4) - Grupo 'segfault'
 %
 % Integrantes:
-% - Joaquín Ituarte
-% - Elías Cerdeira
-% - Manuel Panichelli
+% - Joaquín Ituarte   (LU: 457/13)
+% - Elías Cerdeira    (LU: 692/12)
+% - Manuel Panichelli (LU: 72/18)
+
 %
 % Coloquio: Dani
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
