@@ -1,10 +1,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% TP4 - Grupo 'segfault'
+% TP-PL (4) - Grupo 'segfault'
 %
 % Integrantes:
 % - Joaquín Ituarte
 % - Elías Cerdeira
 % - Manuel Panichelli
+%
+% Coloquio: Dani
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Unidades
@@ -96,7 +98,7 @@ edificiosNecesarios([(U, _)|Ej], [E|Ed2]) :-
 
 % c. Como no es reversible en Ej, lo redefinimos para instanciar con todos los
 % posibles ejercitos.
-% No es reversible en Ej pues ejército tampoco lo es.
+% El nuevo predicado no es reversible en Ej pues ejército tampoco lo es.
 edificiosNecesarios2(Ej, Ed) :- ejercito(Ej), edificiosNecesarios(Ej, Ed).
 
 % Ej 4 : índice de superioridad para unidades
@@ -173,7 +175,7 @@ ganaA(A, B, N) :-
 
 % Nota: Separamos en var y nonvar pues sino estariamos restringiendo a que el
 % tamaño del ejército A sea menor o igual al de B
-% Podriamos hacer esto si |A| <= |B| siempre:
+% Podriamos hacer lo siguiente si |A| <= |B| siempre:
 %
 %   ganaA(A, B, N) :-
 %     tamanoEjercito(B, BN), between(1, BN, N),
